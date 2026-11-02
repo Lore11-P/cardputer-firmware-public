@@ -6,6 +6,7 @@ Tutte le modifiche rilevanti del progetto. Formato basato su Keep a Changelog.
 
 ### Aggiunto
 
+- Sito web del flasher su GitHub Pages, in stile neubrutalista, con installazione via Web Serial e binari letti dal repository.
 - Modulo **Radar** (`src/modules/radar/`, `ENABLE_MODULE_RADAR`): modulo passivo con finder BLE hot/cold, radar PPI, vista banda 2.4 GHz con TDM Wi-Fi/BLE e presenza CSI sperimentale (`ENABLE_RADAR_CSI`).
 - Credenziali Wi-Fi in namespace NVS dedicato `cpfw-net`, cancellabili da menu.
 - Nuova voce **Impostazioni > Rete WiFi**: scanner delle reti, scelta dall'elenco, inserimento della password, salvataggio in NVS, test di connessione, inserimento manuale per reti nascoste e cancellazione delle credenziali.

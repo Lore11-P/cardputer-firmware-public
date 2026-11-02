@@ -8,6 +8,12 @@ scanner BLE/Wi-Fi, radar passivo, web radio, sei giochi e file browser microSD.
 > pubblici; il flashing cancella la memoria del dispositivo. Non scollegare
 > il cavo durante la scrittura.
 
+## Sito web
+
+Il flasher è pubblicato su GitHub Pages: <https://lore11-p.github.io/cardputer-firmware-public/>.
+La pagina usa ESP Web Tools e legge i binari pubblici da `flasher/bin` tramite
+`raw.githubusercontent.com`.
+
 ## Contenuto
 
 - `flash.ps1` / `flash.bat`: flashing da Windows con esptool.

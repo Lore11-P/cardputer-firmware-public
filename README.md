@@ -106,6 +106,9 @@ La cartella `flasher/` contiene:
 - `bin/`: bootloader, partizioni, firmware e LittleFS pronti.
 - `web/`: flasher browser **ESP Web Tools** (Chrome/Edge desktop).
 
+Il flasher è pubblicato su GitHub Pages: <https://lore11-p.github.io/cardputer-firmware-public/>.
+La pagina installa la build pubblica leggendo i binari da questo repository.
+
 Uso rapido:
 
 ```powershell
@@ -115,7 +118,8 @@ cd flasher
 .\flash.bat -Erase        # cancella tutta la flash prima di scrivere
 ```
 
-Per il flasher web: apri un server locale nella cartella `flasher/web` e visita `http://localhost:8000`.
+Per il flasher web usa il sito pubblicato: <https://lore11-p.github.io/cardputer-firmware-public/>.
+In alternativa apri un server locale nella cartella `flasher/web` e visita `http://localhost:8000`.
 
 ```powershell
 cd flasher\web
