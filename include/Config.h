@@ -16,8 +16,8 @@ struct Settings {
     uint8_t brightness = 128;      // 10..255
     uint8_t rotation = 1;          // indice M5GFX
     uint16_t modules = 0xFFFF;     // bitmask Module
-    uint16_t bleDurationSec = 30;  // durata spam BLE
-    uint16_t bleIntervalMs = 100;  // intervallo advertising
+    uint16_t bleDurationSec = 30;  // durata scansione BLE
+    uint16_t bleIntervalMs = 100;  // intervallo di scansione
     uint8_t irRepeat = 2;          // ripetizioni comandi IR
     uint16_t irTvbgDelayMs = 120;  // pausa TV-B-Gone
     uint16_t sleepTimeoutSec = 120;  // 0 = disattivato

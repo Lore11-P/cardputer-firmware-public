@@ -20,7 +20,7 @@
 #include "Ui.h"
 
 #if ENABLE_MODULE_BLE
-#include "modules/ble/BleSpam.h"
+#include "modules/ble/BleScanner.h"
 #endif
 #if ENABLE_MODULE_WIFI
 #include "modules/wifi/WifiMenu.h"

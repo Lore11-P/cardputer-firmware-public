@@ -77,27 +77,6 @@ bool confirm(const std::string& title, const std::vector<std::string>& lines,
     }
 }
 
-bool legalWarning(const std::string& activity, const std::vector<std::string>& extra,
-                  const std::string& parent) {
-    std::vector<std::string> lines;
-    lines.emplace_back("!ATTENZIONE: TRASMISSIONE RADIO");
-    lines.emplace_back("Attivita': " + activity);
-    lines.emplace_back("Usa solo su reti/dispositivi propri");
-    lines.emplace_back("o con autorizzazione scritta.");
-    lines.emplace_back("Ambiente RF isolato. Nessun uso");
-    lines.emplace_back("su reti o persone terze.");
-    for (const auto& e : extra) {
-        lines.push_back(e);
-    }
-    lines.emplace_back(">Leggi il disclaimer nel README.");
-    // Se ci sono troppe righe, compatta le ultime.
-    if (lines.size() > 8) {
-        lines.resize(8);
-        lines.back() = ">Vedi README per il disclaimer.";
-    }
-    return confirm("Avviso legale", lines, parent);
-}
-
 void waitAnyKey(const std::string& title, const std::string& parent) {
     navigation::waitRelease();
     const std::vector<std::string> lines = {"Premi un tasto per continuare."};

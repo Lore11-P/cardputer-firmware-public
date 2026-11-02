@@ -204,18 +204,6 @@ void drawFallbackIcon(const std::string& id, int x, int y, int s) {
         d.drawRect(x + 4, y + 7, s - 8, s - 17, kAccent);
         d.drawLine(cx, y + s - 8, cx, y + s - 3, kTextDim);
         d.drawLine(cx - 6, y + s - 3, cx + 6, y + s - 3, kTextDim);
-    } else if (id == "jammer") {
-        const uint16_t c = kDanger;
-        d.fillCircle(x + 6, y + s - 8, 3, c);
-        d.drawArc(x + 6, y + s - 8, 6, 8, 300, 360, c);
-        d.drawArc(x + 6, y + s - 8, 11, 13, 300, 360, c);
-        d.drawLine(x + 6, y + s - 8, x + s - 4, y + 6, c);
-    } else if (id == "portal") {
-        d.drawRoundRect(x + 2, y + 4, s - 4, s - 8, 3, kInfo);
-        d.drawLine(x + 2, y + 10, x + s - 2, y + 10, kTextDim);
-        d.fillCircle(x + 6, y + 7, 1, kDanger);
-        d.fillCircle(x + 10, y + 7, 1, kWarning);
-        d.fillCircle(x + 14, y + 7, 1, kAccent);
     } else if (id == "lock") {
         d.fillRoundRect(x + 6, y + 14, s - 12, s - 18, 2, kWarning);
         d.drawArc(cx, y + 13, 5, 7, 180, 360, kWarning);
