@@ -6,6 +6,7 @@ Tutte le modifiche rilevanti del progetto. Formato basato su Keep a Changelog.
 
 ### Aggiunto
 
+- **Chat BLE** (`src/modules/chat/`, `ENABLE_MODULE_CHAT`): messaggi broadcast tra Cardputer vicini tramite advertising BLE legacy, senza pairing, con nickname configurabile (max 6 caratteri), cronologia degli ultimi 8 messaggi e conteggio dei dispositivi attivi.
 - Indicatore batteria nella barra superiore: percentuale, colore per livello e stato di carica, visibile in tutte le schermate con header.
 - Sito web del flasher su GitHub Pages, in stile neubrutalista, con installazione via Web Serial e binari letti dal repository.
 - Modulo **Radar** (`src/modules/radar/`, `ENABLE_MODULE_RADAR`): modulo passivo con finder BLE hot/cold, radar PPI, vista banda 2.4 GHz con TDM Wi-Fi/BLE e presenza CSI sperimentale (`ENABLE_RADAR_CSI`).

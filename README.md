@@ -13,6 +13,7 @@ Questa è la **build pubblica**: include scanner BLE/Wi-Fi, radar passivo, web r
 | Giochi | ✅ | Tetris, Breakout, Doom Lite, Snake, Pong, 2048, Flappy, Simon, Minesweeper e Connect 4 con record su SD |
 | Infrarossi | ✅ | Parser `.ir` Flipper, ricerca per nome, preferiti, ripresa ultimo telecomando, tasti rapidi, scanner Power, TV-B-Gone |
 | BLE | ✅ | Scanner passivo/attivo con nome, MAC e RSSI |
+| Chat BLE | ✅ | Messaggi broadcast tra Cardputer vicini, nickname configurabile e cronologia locale |
 | Wi-Fi | ✅ | Scanner reti con dettagli e configurazione della connessione |
 | Radar Wi-Fi/BLE | ✅ | Finder BLE hot/cold con HUD stile contatore Geiger, radar PPI, vista banda 2.4 GHz con TDM Wi-Fi/BLE, presenza CSI sperimentale |
 | Web Radio | ✅ | 5 stazioni HTTP MP3 con decoder ESP32-audioI2S, volume e stato |
@@ -35,6 +36,7 @@ Questa è la **build pubblica**: include scanner BLE/Wi-Fi, radar passivo, web r
 - **IR ricerca**: la voce **Cerca** interroga tutto il database per marca o modello (sottostringa, senza distinzione di maiuscole).
 - **IR tasti rapidi**: dentro un telecomando `P` = Power, `M` = Mute, `=`/`+` = Volume +, `-` = Volume −, `C` = Canale +, `X` = Canale −.
 - **BLE**: scansione con nome, MAC e RSSI.
+- **Chat BLE**: messaggi brevi (max 19 caratteri) scambiati via advertising BLE legacy, senza pairing. `ENTER` scrive, `` ` `` esce; il menu Chat permette di cambiare nickname (max 6 caratteri) e mostra i dispositivi vicini. La cronologia locale conserva gli ultimi 8 messaggi.
 - **Wi-Fi**: scanner con dettagli; configurazione guidata della rete e test di connessione.
 - **Radar**: modulo passivo (nessuna trasmissione). *Find BLE* insegue un singolo beacon/tag con media mobile dell'RSSI, distanza stimata dal modello log-distanza, gauge, barra a 16 segmenti con Peak Hold e indicatori `WARMER`/`COLDER`/`HOTSPOT`, con bussola e freccia verso la direzione stimata. *Radar BLE* mostra i dispositivi come blip su un PPI con sweep continuo. *Banda 2.4 GHz* misura i canali Wi-Fi 1–13 con sniffer promiscuo e sovrappone i tre canali advertising BLE 37/38/39. *Presenza CSI* usa Channel State Information con calibrazione su ambiente vuoto.
 - **Spegnimento automatico**: dopo un tempo configurabile di inattività il dispositivo abbassa la luminosità e, se non arriva un tasto entro 10 secondi, si spegne.
@@ -78,6 +80,7 @@ Ogni modulo si esclude dalla build con il proprio flag (in `platformio.ini` o in
 
 | Flag | Default | Effetto quando vale 0 |
 |---|---|---|
+| `ENABLE_MODULE_CHAT` | 1 | esclude `src/modules/chat/`; richiede comunque `ENABLE_MODULE_BLE=1` |
 | `ENABLE_MODULE_RADAR` | 1 | esclude `src/modules/radar/` (Finder BLE, PPI, banda, CSI) |
 | `ENABLE_MODULE_RADIO` | 1 | esclude `src/modules/radio/` (web radio) |
 | `ENABLE_RADAR_CSI` | 1 | compila il radar ma toglie la sola voce "Presenza CSI" |
@@ -156,6 +159,7 @@ cardputer-firmware-public/
 │   ├── utils/                # storage, configurazione, rete, input testuale
 │   └── modules/
 │       ├── ble/              # scanner
+│       ├── chat/             # chat BLE broadcast
 │       ├── wifi/             # scanner e configurazione rete
 │       ├── radar/            # finder BLE, PPI, banda 2.4 GHz, presenza CSI
 │       ├── radio/            # web radio MP3 via ESP32-audioI2S
@@ -176,6 +180,7 @@ Le impostazioni sono salvate in NVS nel namespace `cardputer-fw`:
 
 - luminosità (10–255), rotazione (0–3);
 - maschera moduli attivi (runtime);
+- nickname Chat BLE (`chat_nick`, default `CPxxxx` dal MAC efuse, max 6 caratteri);
 - intervallo e durata delle funzioni radio, ripetizioni IR, ritardo TV-B-Gone;
 - spegnimento automatico in secondi (`sleep_timeout_sec`: 0 = disattivato, 30, 60, 120, 300, 600, 900, 1800), default 120.
 
@@ -211,6 +216,7 @@ Protocolli parsed supportati: `NEC`, `NECext`, `Samsung32`, `LG`, `Sony`/`SIRC12
 - Radar: il "single target" ricava un bearing con IMU e schermatura del corpo. Qui `WARMER`/`COLDER` indicano la variazione di distanza stimata, non la direzione.
 - Radar CSI (`ENABLE_RADAR_CSI`): senza un access point che generi traffico arrivano solo i beacon degli AP vicini; la sensibilità è inferiore a un sistema con traffico dedicato e va ricalibrata a ogni cambio canale.
 - Web Radio: solo stream **HTTP in MP3/AAC** (niente HTTPS) e una stazione alla volta. Durante l'ascolto il bus I2S è del decoder, quindi i beep del radar non suonano; il decoder consuma ~40 KB di heap.
+- Chat BLE: i messaggi viaggiano in chiaro negli advertising BLE e sono visibili a chiunque sia nel raggio; non usarla per dati sensibili. Funziona solo tra Cardputer con Chat aperta e non garantisce la consegna se il dispositivo è fuori portata.
 - Il progetto è compilato e verificato a livello di build; il collaudo su hardware reale è a carico dell'utente.
 
 ## Licenza

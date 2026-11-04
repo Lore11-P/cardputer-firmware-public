@@ -2,7 +2,7 @@
 
 Pacchetto pronto all'uso per installare il firmware su M5Stack Cardputer ADV
 (ESP32-S3, 8 MB flash) senza compilare nulla. Include 307 telecomandi IR,
-scanner BLE/Wi-Fi, radar passivo, web radio, sei giochi e file browser microSD.
+scanner BLE/Wi-Fi, chat BLE, radar passivo, web radio, sei giochi e file browser microSD.
 
 > **Questa confezione contiene la build pubblica.** Include solo i moduli
 > pubblici; il flashing cancella la memoria del dispositivo. Non scollegare
