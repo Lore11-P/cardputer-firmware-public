@@ -13,7 +13,7 @@ Questa è la **build pubblica**: include scanner BLE/Wi-Fi, radar passivo, web r
 | Giochi | ✅ | Tetris, Breakout, Doom Lite, Snake, Pong, 2048, Flappy, Simon, Minesweeper e Connect 4 con record su SD |
 | Infrarossi | ✅ | Parser `.ir` Flipper, ricerca per nome, preferiti, ripresa ultimo telecomando, tasti rapidi, scanner Power, TV-B-Gone |
 | BLE | ✅ | Scanner passivo/attivo con nome, MAC e RSSI |
-| Chat BLE | ✅ | Messaggi broadcast tra Cardputer vicini, nickname configurabile e cronologia locale |
+| Chat BLE | ✅ | Messaggi cifrati AES e filtrati per destinatario, nickname unico e cronologia locale |
 | Wi-Fi | ✅ | Scanner reti con dettagli e configurazione della connessione |
 | Radar Wi-Fi/BLE | ✅ | Finder BLE hot/cold con HUD stile contatore Geiger, radar PPI, vista banda 2.4 GHz con TDM Wi-Fi/BLE, presenza CSI sperimentale |
 | Web Radio | ✅ | 5 stazioni HTTP MP3 con decoder ESP32-audioI2S, volume e stato |
@@ -36,7 +36,7 @@ Questa è la **build pubblica**: include scanner BLE/Wi-Fi, radar passivo, web r
 - **IR ricerca**: la voce **Cerca** interroga tutto il database per marca o modello (sottostringa, senza distinzione di maiuscole).
 - **IR tasti rapidi**: dentro un telecomando `P` = Power, `M` = Mute, `=`/`+` = Volume +, `-` = Volume −, `C` = Canale +, `X` = Canale −.
 - **BLE**: scansione con nome, MAC e RSSI.
-- **Chat BLE**: messaggi brevi (max 19 caratteri) scambiati via advertising BLE legacy, senza pairing. `ENTER` scrive, `` ` `` esce; il menu Chat permette di cambiare nickname (max 6 caratteri) e mostra i dispositivi vicini. La cronologia locale conserva gli ultimi 8 messaggi.
+- **Chat BLE**: messaggi brevi (max 15 caratteri) scambiati via advertising BLE legacy, senza pairing, con payload cifrato AES-128-CBC. Ogni messaggio è indirizzato a un nickname: il destinatario lo decritta e lo mostra, gli altri lo ignorano. `ENTER` scrive, `` ` `` esce; il menu Chat permette di cambiare nickname (max 6 caratteri, con verifica di unicità via BLE) e destinatario predefinito, e mostra i dispositivi vicini. Con la Chat aperta il dispositivo annuncia il proprio nickname ogni pochi secondi e avvisa quando un peer entra nel raggio; la voce `Notifiche: ON/OFF` disattiva annuncio e avvisi (utile in stealth o per risparmiare batteria). La cronologia locale conserva gli ultimi 8 messaggi. La voce **Ripetitore** avvia una modalità standalone che inoltra solo i pacchetti cifrati, senza decifrarli, per estendere il raggio; i duplicati vengono scartati per mittente e contatore.
 - **Wi-Fi**: scanner con dettagli; configurazione guidata della rete e test di connessione.
 - **Radar**: modulo passivo (nessuna trasmissione). *Find BLE* insegue un singolo beacon/tag con media mobile dell'RSSI, distanza stimata dal modello log-distanza, gauge, barra a 16 segmenti con Peak Hold e indicatori `WARMER`/`COLDER`/`HOTSPOT`, con bussola e freccia verso la direzione stimata. *Radar BLE* mostra i dispositivi come blip su un PPI con sweep continuo. *Banda 2.4 GHz* misura i canali Wi-Fi 1–13 con sniffer promiscuo e sovrappone i tre canali advertising BLE 37/38/39. *Presenza CSI* usa Channel State Information con calibrazione su ambiente vuoto.
 - **Spegnimento automatico**: dopo un tempo configurabile di inattività il dispositivo abbassa la luminosità e, se non arriva un tasto entro 10 secondi, si spegne.
@@ -180,7 +180,7 @@ Le impostazioni sono salvate in NVS nel namespace `cardputer-fw`:
 
 - luminosità (10–255), rotazione (0–3);
 - maschera moduli attivi (runtime);
-- nickname Chat BLE (`chat_nick`, default `CPxxxx` dal MAC efuse, max 6 caratteri);
+- nickname Chat BLE (`chat_nick`, default `CPxxxx` dal MAC efuse, max 6 caratteri), destinatario predefinito (`chat_to`, max 6 caratteri) e notifiche di presenza (`chat_notify`, default attive);
 - intervallo e durata delle funzioni radio, ripetizioni IR, ritardo TV-B-Gone;
 - spegnimento automatico in secondi (`sleep_timeout_sec`: 0 = disattivato, 30, 60, 120, 300, 600, 900, 1800), default 120.
 
@@ -216,7 +216,7 @@ Protocolli parsed supportati: `NEC`, `NECext`, `Samsung32`, `LG`, `Sony`/`SIRC12
 - Radar: il "single target" ricava un bearing con IMU e schermatura del corpo. Qui `WARMER`/`COLDER` indicano la variazione di distanza stimata, non la direzione.
 - Radar CSI (`ENABLE_RADAR_CSI`): senza un access point che generi traffico arrivano solo i beacon degli AP vicini; la sensibilità è inferiore a un sistema con traffico dedicato e va ricalibrata a ogni cambio canale.
 - Web Radio: solo stream **HTTP in MP3/AAC** (niente HTTPS) e una stazione alla volta. Durante l'ascolto il bus I2S è del decoder, quindi i beep del radar non suonano; il decoder consuma ~40 KB di heap.
-- Chat BLE: i messaggi viaggiano in chiaro negli advertising BLE e sono visibili a chiunque sia nel raggio; non usarla per dati sensibili. Funziona solo tra Cardputer con Chat aperta e non garantisce la consegna se il dispositivo è fuori portata.
+- Chat BLE: i messaggi sono offuscati con AES-128-CBC ma la chiave deriva dai nickname pubblici, quindi non è una cifratura end-to-end robusta: chi conosce mittente e destinatario può decifrare. Il Ripetitore inoltra i pacchetti senza decifrarli, ma con l'attuale derivazione della chiave non è una garanzia crittografica contro un relay modificato. La verifica di unicità del nickname funziona solo con gli altri dispositivi che hanno la Chat aperta. Con le notifiche attive il nickname viene annunciato via BLE e quindi è visibile a chi ascolta; disattivale per la modalità stealth. Funziona solo tra dispositivi compatibili con il protocollo v2 e non garantisce la consegna se il destinatario è fuori portata.
 - Il progetto è compilato e verificato a livello di build; il collaudo su hardware reale è a carico dell'utente.
 
 ## Licenza

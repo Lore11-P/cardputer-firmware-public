@@ -44,6 +44,13 @@ struct Settings {
 
     // Nickname mostrato nella chat BLE (max kChatNicknameMax caratteri).
     std::string chatNickname;
+
+    // Destinatario predefinito della chat BLE (max kChatNicknameMax caratteri).
+    std::string chatRecipient;
+
+    // Notifiche di presenza chat: annuncia il dispositivo e avvisa quando
+    // entra nel raggio un peer. Disattivabile per risparmio/stealth.
+    bool chatNotify = true;
 };
 
 void begin();
@@ -79,6 +86,14 @@ void setRadarSensitivity(uint8_t level);
 // Nickname della chat BLE, sanificato e non vuoto.
 std::string chatNickname();
 void setChatNickname(const std::string& nickname);
+
+// Destinatario predefinito della chat BLE, sanificato e non vuoto.
+std::string chatRecipient();
+void setChatRecipient(const std::string& recipient);
+
+// Notifiche di presenza della chat BLE.
+bool chatNotifyEnabled();
+void setChatNotifyEnabled(bool enabled);
 
 // JSON non sensibile, utile per backup della configurazione.
 std::string toJson();

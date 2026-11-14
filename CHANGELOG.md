@@ -6,7 +6,8 @@ Tutte le modifiche rilevanti del progetto. Formato basato su Keep a Changelog.
 
 ### Aggiunto
 
-- **Chat BLE** (`src/modules/chat/`, `ENABLE_MODULE_CHAT`): messaggi broadcast tra Cardputer vicini tramite advertising BLE legacy, senza pairing, con nickname configurabile (max 6 caratteri), cronologia degli ultimi 8 messaggi e conteggio dei dispositivi attivi.
+- **Chat BLE** (`src/modules/chat/`, `ENABLE_MODULE_CHAT`): messaggi broadcast tra Cardputer vicini tramite advertising BLE legacy, senza pairing, con nickname configurabile (max 6 caratteri), destinatario predefinito, payload cifrato AES-128-CBC, filtro per nickname, verifica di unicità del nickname, cronologia degli ultimi 8 messaggi e conteggio dei dispositivi attivi.
+- **Notifiche di presenza Chat**: con la Chat aperta il dispositivo annuncia periodicamente il proprio nickname e avvisa con nome quando un peer entra nel raggio. Voce `Notifiche: ON/OFF` nel menu Chat per disattivare annuncio e avvisi (stealth/risparmio); lo stato è salvato in NVS (`chat_notify`).
 - Indicatore batteria nella barra superiore: percentuale, colore per livello e stato di carica, visibile in tutte le schermate con header.
 - Sito web del flasher su GitHub Pages, in stile neubrutalista, con installazione via Web Serial e binari letti dal repository.
 - Modulo **Radar** (`src/modules/radar/`, `ENABLE_MODULE_RADAR`): modulo passivo con finder BLE hot/cold, radar PPI, vista banda 2.4 GHz con TDM Wi-Fi/BLE e presenza CSI sperimentale (`ENABLE_RADAR_CSI`).
@@ -28,6 +29,7 @@ Tutte le modifiche rilevanti del progetto. Formato basato su Keep a Changelog.
 
 - `SettingsMenu`: elenco dei moduli attivi scrollabile con indicatore di posizione.
 - Menu principale e Giochi a carosello invece della griglia 3x2.
+- Chat BLE: protocollo v2 con messaggi da 15 caratteri, chiave derivata da mittente/destinatario e verifica del nickname prima del salvataggio.
 - README e CHANGELOG aggiornati con comandi, giochi, funzioni IR, modulo Radar, flag e limiti noti.
 
 ### Corretto
