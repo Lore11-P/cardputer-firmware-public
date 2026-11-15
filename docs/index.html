@@ -669,6 +669,7 @@
   .feature:nth-child(6) { background: var(--yellow); }
   .feature:nth-child(7) { background: var(--cyan); }
   .feature:nth-child(8) { background: var(--pink); }
+  .feature:nth-child(9) { background: var(--green); }
   .feature h3 {
     margin: 0;
     font-family: "Archivo Black", sans-serif;
@@ -824,8 +825,8 @@
       </div>
       <div class="stats" aria-label="Informazioni firmware">
         <div class="stat">
-          <span class="stat-label">RELEASE</span>
-          <strong data-release-tag>v1.0.0</strong>
+          <span class="stat-label">VERSIONE</span>
+          <strong>v1.1.0</strong>
         </div>
         <div class="stat">
           <span class="stat-label">TARGET</span>
@@ -871,7 +872,7 @@
       </div>
       <div class="sticker sticker-a">NO DRIVER</div>
       <div class="sticker sticker-b">WEB SERIAL</div>
-      <div class="scribble">v1.0.0</div>
+      <div class="scribble">v1.1.0</div>
     </div>
   </section>
 </main>
@@ -905,9 +906,9 @@
         </esp-web-install-button>
 
         <div class="flash-meta">
-          <a data-asset="firmware.bin" href="https://github.com/Lore11-P/cardputer-firmware-public/releases/latest" target="_blank" rel="noopener">firmware.bin</a>
-          <a data-asset="littlefs.bin" href="https://github.com/Lore11-P/cardputer-firmware-public/releases/latest" target="_blank" rel="noopener">littlefs.bin</a>
-          <a href="https://github.com/Lore11-P/cardputer-firmware-public/releases/latest" target="_blank" rel="noopener">RELEASE &nearr;</a>
+          <a href="https://raw.githubusercontent.com/Lore11-P/cardputer-firmware-public/main/flasher/bin/firmware.bin" target="_blank" rel="noopener">firmware.bin</a>
+          <a href="https://raw.githubusercontent.com/Lore11-P/cardputer-firmware-public/main/flasher/bin/littlefs.bin" target="_blank" rel="noopener">littlefs.bin</a>
+          <a href="https://github.com/Lore11-P/cardputer-firmware-public/tree/main/flasher/bin" target="_blank" rel="noopener">BINARI &nearr;</a>
         </div>
 
         <p class="micro">
@@ -966,13 +967,17 @@
     <div class="section-head">
       <span class="section-num">03</span>
       <h2>COSA C'&Egrave;<br>DENTRO.</h2>
-      <p>La build pubblica: scanner, radar passivo, web radio, telecomandi IR, giochi e gestione microSD. Niente funzioni offensive.</p>
+      <p>La build pubblica: scanner, chat BLE, radar passivo, web radio, telecomandi IR, giochi e gestione microSD. Niente funzioni offensive.</p>
     </div>
 
     <div class="features-grid">
       <article class="feature">
         <h3>BLE SCANNER</h3>
         <p>Scansione passiva e attiva con nome, MAC e RSSI.</p>
+      </article>
+      <article class="feature">
+        <h3>CHAT BLE</h3>
+        <p>Messaggi cifrati AES filtrati per destinatario, senza pairing, con avvisi di presenza quando un peer entra nel raggio.</p>
       </article>
       <article class="feature">
         <h3>WIFI</h3>
@@ -988,11 +993,11 @@
       </article>
       <article class="feature">
         <h3>IR REMOTE</h3>
-        <p>307 file .ir, ricerca, preferiti e tasti rapidi.</p>
+        <p>309 file .ir, ricerca, preferiti e tasti rapidi.</p>
       </article>
       <article class="feature">
         <h3>GAMES</h3>
-        <p>Dieci giochi con record persistenti sulla microSD.</p>
+        <p>Tredici giochi, dai classici arcade a Minecraft 3D in prima persona.</p>
       </article>
       <article class="feature">
         <h3>MICROSD</h3>
@@ -1022,12 +1027,12 @@
 <footer class="footer">
   <div class="footer-inner">
     <p>
-      CardputerFirmware v1.0 &middot; build pubblica &middot; licenza MIT<br>
-      Ultima release: <span data-release-tag>v1.0.0</span> &middot; <span data-release-date>31 ott 2026</span>
+      CardputerFirmware v1.1 &middot; build pubblica &middot; licenza MIT<br>
+      Ultima build: <strong>v1.1.0</strong> &middot; <span>15 nov 2026</span>
     </p>
     <div class="footer-links">
       <a href="https://github.com/Lore11-P/cardputer-firmware-public" target="_blank" rel="noopener">GITHUB &nearr;</a>
-      <a href="https://github.com/Lore11-P/cardputer-firmware-public/releases/latest" target="_blank" rel="noopener">RELEASE &nearr;</a>
+      <a href="https://github.com/Lore11-P/cardputer-firmware-public/tree/main/flasher/bin" target="_blank" rel="noopener">BINARI &nearr;</a>
       <a href="https://esphome.github.io/esp-web-tools/" target="_blank" rel="noopener">ESP WEB TOOLS &nearr;</a>
     </div>
   </div>
@@ -1052,39 +1057,6 @@
         status.textContent = "Browser non supportato - usa Chrome o Edge desktop";
       }
     }
-
-    var repo = "Lore11-P/cardputer-firmware-public";
-    var releaseApi = "https://api.github.com/repos/" + repo + "/releases/latest";
-    var fallbackRelease = "https://github.com/" + repo + "/releases/latest";
-
-    fetch(releaseApi, { headers: { Accept: "application/vnd.github+json" } })
-      .then(function (response) {
-        if (!response.ok) throw new Error("release " + response.status);
-        return response.json();
-      })
-      .then(function (release) {
-        document.querySelectorAll("[data-release-tag]").forEach(function (node) {
-          node.textContent = release.tag_name || "v1.0.0";
-        });
-        var date = release.published_at ? new Date(release.published_at) : null;
-        if (date && !isNaN(date.getTime())) {
-          var formatted = date.toLocaleDateString("it-IT", { day: "2-digit", month: "short", year: "numeric" });
-          document.querySelectorAll("[data-release-date]").forEach(function (node) {
-            node.textContent = formatted;
-          });
-        }
-        (release.assets || []).forEach(function (asset) {
-          document.querySelectorAll('[data-asset="' + asset.name + '"]').forEach(function (link) {
-            link.href = asset.browser_download_url;
-            link.title = asset.name + " - " + (asset.size / 1024 / 1024).toFixed(1) + " MB";
-          });
-        });
-      })
-      .catch(function () {
-        document.querySelectorAll('[data-asset]').forEach(function (link) {
-          link.href = fallbackRelease;
-        });
-      });
   })();
 </script>
 </body>

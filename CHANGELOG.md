@@ -4,6 +4,8 @@ Tutte le modifiche rilevanti del progetto. Formato basato su Keep a Changelog.
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-15
+
 ### Aggiunto
 
 - **Chat BLE** (`src/modules/chat/`, `ENABLE_MODULE_CHAT`): messaggi broadcast tra Cardputer vicini tramite advertising BLE legacy, senza pairing, con nickname configurabile (max 6 caratteri), destinatario predefinito, payload cifrato AES-128-CBC, filtro per nickname, verifica di unicità del nickname, cronologia degli ultimi 8 messaggi e conteggio dei dispositivi attivi.
