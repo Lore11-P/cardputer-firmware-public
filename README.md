@@ -18,7 +18,7 @@ Questa è la **build pubblica**: include scanner BLE/Wi-Fi, radar passivo, web r
 | Radar Wi-Fi/BLE | ✅ | Finder BLE hot/cold con HUD stile contatore Geiger, radar PPI, vista banda 2.4 GHz con TDM Wi-Fi/BLE, presenza CSI sperimentale |
 | Web Radio | ✅ | 5 stazioni HTTP MP3 con decoder ESP32-audioI2S, volume e stato |
 | microSD | ✅ | File browser, info spazio, screenshot BMP, backup config e punteggi |
-| Database IR | 🟡 | 307 file .ir, 38 cartelle: 32 marche TV complete, 5 parziali, 3 coperte da Universale |
+| Database IR | 🟡 | 309 file .ir, 38 cartelle: 32 marche TV complete, 5 parziali, 3 coperte da Universale |
 | Asset icone 32×32 | ✅ | BMP 24 bit generati, con fallback se assenti |
 | Test automatici host | ⬜ | Predisposta la cartella `test/`, nessun test incluso |
 | Verifica su hardware reale | ⬜ | Compilazione e filesystem verificati; test su device da fare |
@@ -169,7 +169,7 @@ cardputer-firmware-public/
 │       └── settings/         # impostazioni e info
 ├── data/
 │   ├── icons/                # icone BMP 32x32
-│   └── ir/<marca>/           # 307 file .ir, 38 cartelle
+│   └── ir/<marca>/           # 309 file .ir, 38 cartelle
 ├── flasher/                  # script + binari + flasher web
 └── test/                     # predisposto per test host
 ```
