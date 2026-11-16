@@ -31,6 +31,7 @@ constexpr size_t kChatNicknameMax = 6;
 struct Settings {
     uint8_t brightness = 128;      // 10..255
     uint8_t rotation = 1;          // indice M5GFX
+    uint8_t theme = 0;             // palette Orbit (0..6)
     uint16_t modules = 0xFFFF;     // bitmask Module
     uint16_t bleDurationSec = 30;  // durata scansione BLE
     uint16_t bleIntervalMs = 100;  // intervallo di scansione
@@ -63,6 +64,10 @@ void setBrightness(uint8_t value);
 
 uint8_t rotation();
 void setRotation(uint8_t index);
+
+// Tema colore Orbit (0 = Nova ... 6 = Paper).
+uint8_t theme();
+void setTheme(uint8_t index);
 
 bool moduleEnabled(Module module);
 bool moduleCompiled(Module module);

@@ -1,11 +1,13 @@
-#include "MenuManager.h"
+﻿#include "MenuManager.h"
 
 #include <Arduino.h>
 #include <algorithm>
+#include <cmath>
 #include <cstdio>
 
 #include "Display.h"
 #include "Navigation.h"
+#include "Orbit.h"
 
 namespace {
 constexpr int kHeaderHeight = 22;
@@ -16,7 +18,8 @@ constexpr int kGridMargin = 4;
 constexpr int kGridGap = 4;
 constexpr int kGridIcon = 24;
 constexpr int kCarouselFrames = 6;
-constexpr int kCarouselSpacing = 84;
+// Passo angolare tra due voci sull'orbita (radianti).
+constexpr float kOrbitStep = 0.5934f;  // 34 gradi
 
 std::string toUpperFirst(const std::string& s) {
     if (s.empty()) {
@@ -39,56 +42,73 @@ std::string toUpper(const std::string& s) {
     return out;
 }
 
-std::string ellipsize(const std::string& text, int maxWidth) {
-    auto& d = display::g();
-    d.setFont(&fonts::Font0);
-    if (d.textWidth(text.c_str()) <= maxWidth) {
+std::string ellipsize(const std::string& text, int maxWidth, uint8_t font = 0) {
+    if (display::textWidth(text, font) <= maxWidth) {
         return text;
     }
     std::string out = text;
-    while (out.size() > 2 && d.textWidth((out + "..").c_str()) > maxWidth) {
+    while (out.size() > 2 && display::textWidth(out + "..", font) > maxWidth) {
         out.pop_back();
     }
     return out + "..";
 }
 
-uint16_t accentFor(int index) {
-    static const uint16_t kColors[] = {
-        display::kNeoCyan,
-        display::kNeoPink,
-        display::kNeoGreen,
-        display::kNeoOrange,
-    };
-    return kColors[static_cast<size_t>(index) % (sizeof(kColors) / sizeof(kColors[0]))];
+// Angoli d'accento: la firma visiva dei pannelli Orbit.
+void cornerTicks(int x, int y, int w, int h, uint16_t color, int len = 4) {
+    auto& d = display::g();
+    d.drawFastHLine(x, y, len, color);
+    d.drawFastVLine(x, y, len, color);
+    d.drawFastHLine(x + w - len, y, len, color);
+    d.drawFastVLine(x + w - 1, y, len, color);
+    d.drawFastHLine(x, y + h - 1, len, color);
+    d.drawFastVLine(x, y + h - len, len, color);
+    d.drawFastHLine(x + w - len, y + h - 1, len, color);
+    d.drawFastVLine(x + w - 1, y + h - len, len, color);
 }
 
-void drawCard(int x, int y, int w, int h, uint16_t fill, bool shadow) {
+void drawPanel(int x, int y, int w, int h, bool selected, uint16_t fill) {
     auto& d = display::g();
-    if (shadow) {
-        d.fillRect(x + 3, y + 3, w, h, display::kInk);
-    }
     d.fillRect(x, y, w, h, fill);
-    d.drawRect(x, y, w, h, display::kInk);
-    d.drawRect(x + 1, y + 1, w - 2, h - 2, display::kInk);
+    d.drawRect(x, y, w, h, selected ? display::C(display::T_acc) : display::C(display::T_line));
+    if (selected) {
+        cornerTicks(x + 1, y + 1, w - 2, h - 2, display::C(display::T_accL), 5);
+        d.fillRect(x, y + 3, 2, h - 6, display::C(display::T_acc));
+    } else {
+        d.drawPixel(x, y, display::C(display::T_line2));
+        d.drawPixel(x + w - 1, y + h - 1, display::C(display::T_line2));
+    }
 }
 
-void drawCarouselCard(const MenuItem& item, int x, int y, int w, int h, bool center, int index) {
-    drawCard(x, y, w, h, center ? display::kNeoYellow : display::kPaperLight, center);
+// Badge circolare per il carosello orbitale.
+void drawOrbitBadge(const MenuItem& item, int cx, int cy, int iconSize, bool selected, float depth) {
     auto& d = display::g();
-    d.fillRect(x + 2, y + 2, w - 4, center ? 5 : 4, accentFor(index));
-    d.drawFastHLine(x + 2, y + (center ? 7 : 6), w - 4, display::kInk);
-
-    const int iconSize = center ? 32 : 22;
-    display::drawIcon(item.icon, x + (w - iconSize) / 2, y + (center ? 11 : 8), iconSize);
-
-    std::string label = toUpper(item.label);
-    label = ellipsize(label, w - 6);
-    d.setFont(&fonts::Font0);
-    const int textW = d.textWidth(label.c_str());
-    display::text(x + (w - textW) / 2, y + h - 10, label,
-                  item.enabled ? (center ? display::kInk : display::kMuted)
-                               : display::kMuted,
-                  0);
+    const int r = iconSize / 2 + (selected ? 5 : 3);
+    const uint16_t fill = selected ? display::C(display::T_bg3)
+                                   : orbit::blend(display::C(display::T_bg2),
+                                                  display::C(display::T_bg), 120);
+    d.fillCircle(cx, cy, r, fill);
+    if (selected) {
+        d.drawCircle(cx, cy, r, display::C(display::T_acc));
+        d.drawCircle(cx, cy, r + 2, orbit::blend(display::C(display::T_acc),
+                                                 display::C(display::T_bg), 170));
+        d.drawCircle(cx, cy, r + 4, orbit::blend(display::C(display::T_acc),
+                                                 display::C(display::T_bg), 215));
+    } else {
+        d.drawCircle(cx, cy, r, orbit::blend(display::C(display::T_line),
+                                             display::C(display::T_bg),
+                                             static_cast<uint8_t>(depth < 0 ? 90 : 20)));
+    }
+    if (item.icon == "separator") {
+        d.drawFastHLine(cx - iconSize / 2, cy, iconSize, display::C(display::T_line));
+        return;
+    }
+    const uint16_t tint = selected ? 0 : orbit::blend(display::C(display::T_text),
+                                                      display::C(display::T_bg),
+                                                      static_cast<uint8_t>(depth < 0 ? 110 : 30));
+    display::drawOrbitIcon(item.icon, cx - iconSize / 2, cy - iconSize / 2, iconSize, tint);
+    if (!item.enabled) {
+        d.drawLine(cx - r + 2, cy + r - 2, cx + r - 2, cy - r + 2, display::C(display::T_err));
+    }
 }
 }  // namespace
 
@@ -210,17 +230,12 @@ void MenuManager::moveGrid(int dx, int dy) {
     int row = (selected_ - pageStart) / cols;
     int col = (selected_ - pageStart) % cols;
 
-    // Orizzontale: si resta nella pagina, con wrap tra le colonne.
     if (dx != 0) {
         col = (col + dx + cols) % cols;
     }
 
     int target = pageStart + row * cols + col;
 
-    // Verticale: uscendo dal bordo superiore o inferiore si passa alla pagina
-    // precedente o successiva (con wrap), altrimenti si cambia riga. Prima
-    // questa funzione faceva il wrap dentro la pagina e le pagine successive
-    // restavano irraggiungibili (es. 38 marche, 6 per pagina).
     if (dy != 0) {
         const int nextRow = row + dy;
         if (nextRow >= 0 && nextRow < rows) {
@@ -229,9 +244,9 @@ void MenuManager::moveGrid(int dx, int dy) {
             const int direction = (dy > 0) ? 1 : -1;
             int nextPageStart = pageStart + direction * size;
             if (nextPageStart < 0) {
-                nextPageStart = ((count - 1) / size) * size;  // ultima pagina
+                nextPageStart = ((count - 1) / size) * size;
             } else if (nextPageStart >= count) {
-                nextPageStart = 0;                            // prima pagina
+                nextPageStart = 0;
             }
             const int nextRowInPage = (direction > 0) ? 0 : (rows - 1);
             target = nextPageStart + nextRowInPage * cols + col;
@@ -242,8 +257,6 @@ void MenuManager::moveGrid(int dx, int dy) {
         target = count - 1;
     }
 
-    // Se la cella non esiste (ultima pagina incompleta) o non e' selezionabile,
-    // si cerca la successiva disponibile scorrendo l'elenco.
     for (int attempt = 0; attempt < count; ++attempt) {
         if (target >= 0 && target < count && selectable(target)) {
             selected_ = target;
@@ -315,13 +328,20 @@ void MenuManager::run(bool allowBack) {
                 moveSelection(1);
             }
             next = millis() + 110;
+            return true;
         }
+        return false;
     };
 
     bool running = true;
+    uint32_t lastClock = millis() / 1000;
     while (running) {
         navigation::update();
         const navigation::EventData ev = navigation::poll();
+
+        bool dirty = false;
+        const int selBefore = selected_;
+        const int topBefore = top_;
 
         if (ev.type == navigation::Event::Up) {
             if (mode_ == Mode::Grid) {
@@ -353,22 +373,46 @@ void MenuManager::run(bool allowBack) {
                 items_[selected_].action();
                 navigation::waitRelease();
             }
+            dirty = true;
         } else if (ev.type == navigation::Event::Back) {
             if (allowBack) {
                 running = false;
             }
         } else if (ev.type == navigation::Event::Text && textHandler_) {
             textHandler_(ev.ch);
+            dirty = true;
         }
 
-        repeat(upHeld, nextUp, navigation::pressed(';'), 0, -1);
-        repeat(downHeld, nextDown, navigation::pressed('.'), 0, 1);
+        if (repeat(upHeld, nextUp, navigation::pressed(';'), 0, -1)) {
+            dirty = true;
+        }
+        if (repeat(downHeld, nextDown, navigation::pressed('.'), 0, 1)) {
+            dirty = true;
+        }
         if (mode_ == Mode::Grid || mode_ == Mode::Carousel) {
-            repeat(leftHeld, nextLeft, navigation::pressed(','), -1, 0);
-            repeat(rightHeld, nextRight, navigation::pressed('/'), 1, 0);
+            if (repeat(leftHeld, nextLeft, navigation::pressed(','), -1, 0)) {
+                dirty = true;
+            }
+            if (repeat(rightHeld, nextRight, navigation::pressed('/'), 1, 0)) {
+                dirty = true;
+            }
         }
 
-        draw();
+        if (selected_ != selBefore || top_ != topBefore) {
+            dirty = true;
+        }
+        const uint32_t clock = millis() / 1000;
+        if (clock != lastClock) {
+            lastClock = clock;
+            dirty = true;
+        }
+        if (mode_ == Mode::Carousel && carouselAnim_ > 0) {
+            dirty = true;
+        }
+
+        if (dirty) {
+            draw();
+        }
         delay(16);
     }
 }
@@ -377,7 +421,7 @@ void MenuManager::draw() {
     visibleRows_ = rowsPerPage();
     ensureVisible();
 
-    display::clear(display::kPaper);
+    display::clear(display::C(display::T_bg));
     display::header(title_, parent_);
 
     if (mode_ == Mode::Grid) {
@@ -388,22 +432,18 @@ void MenuManager::draw() {
         drawList();
     }
 
-    display::footer(hint_);
-
+    // Indicatore di pagina nella riga di stato (al posto del LED).
+    std::string trailing;
     if (mode_ == Mode::Grid) {
         const int size = pageSize();
-        const int pages = size > 0
-                              ? (static_cast<int>(items_.size()) + size - 1) / size
-                              : 1;
+        const int pages = size > 0 ? (static_cast<int>(items_.size()) + size - 1) / size : 1;
         if (pages > 1) {
             char pageText[16];
-            std::snprintf(pageText, sizeof(pageText), "%d/%d",
-                          selected_ / size + 1, pages);
-            display::text(display::width() - 26, display::height() - 10,
-                          pageText, display::kNeoYellow, 0);
+            std::snprintf(pageText, sizeof(pageText), "P%d/%d", selected_ / size + 1, pages);
+            trailing = pageText;
         }
     }
-
+    display::footer(hint_, trailing);
     display::push();
 }
 
@@ -412,7 +452,8 @@ void MenuManager::drawList() {
     const int bodyTop = kHeaderHeight;
 
     if (items_.empty()) {
-        display::textCentered(bodyTop + 16, "Nessuna voce disponibile", display::kMuted, 2);
+        display::drawOrbitIcon("planet", w / 2 - 16, bodyTop + 18, 32);
+        display::textCentered(bodyTop + 56, "NESSUN SEGNALE", display::C(display::T_dim), 2);
         return;
     }
 
@@ -422,35 +463,45 @@ void MenuManager::drawList() {
             break;
         }
         const MenuItem& item = items_[idx];
-        const int y = bodyTop + row * kRowHeight;
+        const int y = bodyTop + row * kRowHeight + 1;
 
         if (item.icon == "separator") {
-            display::g().drawFastHLine(8, y + kRowHeight / 2, w - 16, display::kInk);
+            auto& d = display::g();
+            d.drawFastHLine(8, y + kRowHeight / 2 - 1, 12, display::C(display::T_acc));
+            d.drawFastHLine(24, y + kRowHeight / 2 - 1, w - 32, display::C(display::T_line));
             if (!item.label.empty()) {
-                display::text(10, y + 5, item.label, display::kMuted, 0);
+                display::text(28, y + 4, toUpper(item.label), display::C(display::T_dim), 0);
             }
             continue;
         }
 
         const bool selected = (idx == selected_);
-        drawCard(2, y + 1, w - 6, kRowHeight - 3,
-                 selected ? display::kNeoYellow : display::kPaperLight, selected);
+        drawPanel(2, y, w - 6, kRowHeight - 2, selected,
+                  selected ? display::C(display::T_bg3) : display::C(display::T_bg2));
 
-        const uint16_t fg = item.enabled ? display::kInk : display::kMuted;
-        display::drawIcon(item.icon, 7, y + 2, kIconSize);
-        display::text(29, y + 3, toUpperFirst(item.label), fg, 2);
+        display::drawOrbitIcon(item.icon, 8, y + 2, kIconSize,
+                               item.enabled ? 0 : display::C(display::T_dim));
+        const uint16_t fg = item.enabled ? (selected ? display::C(display::T_hi)
+                                                     : display::C(display::T_text))
+                                         : display::C(display::T_dim);
+        display::text(28, y + 5, ellipsize(toUpperFirst(item.label), w - 60, 2), fg, 2);
+        // Chevron di apertura.
+        auto& d = display::g();
+        const int ax = w - 14;
+        d.drawLine(ax, y + 6, ax + 4, y + 9, selected ? display::C(display::T_acc) : display::C(display::T_line));
+        d.drawLine(ax + 4, y + 9, ax, y + 12, selected ? display::C(display::T_acc) : display::C(display::T_line));
     }
 
     const int total = static_cast<int>(items_.size());
     if (total > visibleRows_) {
-        const int trackX = w - 4;
-        const int trackTop = bodyTop + 1;
-        const int trackH = visibleRows_ * kRowHeight - 2;
-        display::g().fillRect(trackX, trackTop, 3, trackH, display::kInk);
+        const int trackX = w - 2;
+        const int trackTop = bodyTop + 2;
+        const int trackH = visibleRows_ * kRowHeight - 4;
+        display::g().fillRect(trackX, trackTop, 1, trackH, display::C(display::T_line));
         const int thumbH = std::max(8, trackH * visibleRows_ / total);
         const int thumbY =
             trackTop + (trackH - thumbH) * top_ / std::max(1, total - visibleRows_);
-        display::g().fillRect(trackX, thumbY, 3, thumbH, display::kNeoYellow);
+        display::g().fillRect(trackX - 1, thumbY, 3, thumbH, display::C(display::T_acc));
     }
 }
 
@@ -465,7 +516,7 @@ void MenuManager::drawGrid() {
     const int size = pageSize();
 
     if (items_.empty()) {
-        display::textCentered(bodyTop + 16, "Nessuna voce disponibile", display::kMuted, 2);
+        display::textCentered(bodyTop + 26, "NESSUN SEGNALE", display::C(display::T_dim), 2);
         return;
     }
 
@@ -483,77 +534,123 @@ void MenuManager::drawGrid() {
         const int y = bodyTop + kGridMargin + (i / cols) * (tileH + kGridGap);
         const bool selected = (idx == selected_);
 
-        drawCard(x, y, tileW, tileH,
-                 selected ? display::kNeoYellow : display::kPaperLight, selected);
-
-        display::g().fillRect(x + 2, y + 2, tileW - 4, 4, accentFor(idx));
-        display::g().drawFastHLine(x + 2, y + 6, tileW - 4, display::kInk);
+        drawPanel(x, y, tileW, tileH, selected,
+                  selected ? display::C(display::T_bg3) : display::C(display::T_bg2));
 
         const int iconSize = std::max(12, std::min(kGridIcon, tileH - 20));
-        display::drawIcon(item.icon, x + (tileW - iconSize) / 2, y + 8, iconSize);
+        display::drawOrbitIcon(item.icon, x + (tileW - iconSize) / 2,
+                               y + (tileH - iconSize) / 2 - 4, iconSize,
+                               item.enabled ? 0 : display::C(display::T_dim));
 
-        std::string label = toUpper(item.label);
-        label = ellipsize(label, tileW - 6);
-        auto& d = display::g();
-        d.setFont(&fonts::Font0);
-        const int textW = d.textWidth(label.c_str());
-        display::text(x + (tileW - textW) / 2, y + tileH - 10, label,
-                      item.enabled ? display::kInk : display::kMuted, 0);
+        std::string label = ellipsize(toUpper(item.label), tileW - 6, 0);
+        display::text(x + (tileW - display::textWidth(label, 0)) / 2, y + tileH - 11, label,
+                      item.enabled ? display::C(display::T_text) : display::C(display::T_dim), 0);
     }
 }
 
 void MenuManager::drawCarousel() {
     const int w = display::width();
+    const int h = display::height();
     const int total = static_cast<int>(items_.size());
+    const int bodyTop = kHeaderHeight;
+
     if (total == 0) {
-        display::textCentered(kHeaderHeight + 20, "Nessuna voce disponibile",
-                              display::kMuted, 2);
+        display::textCentered(bodyTop + 30, "NESSUN SEGNALE", display::C(display::T_dim), 2);
         return;
     }
 
-    const int centerX = w / 2;
-    const int centerW = 104;
-    const int centerH = 74;
-    const int sideW = 70;
-    const int sideH = 58;
-    const int centerY = kHeaderHeight + 8;
-    const int sideY = kHeaderHeight + 17;
-    const int shift = carouselAnim_ > 0
-                          ? carouselDir_ * (carouselAnim_ * kCarouselSpacing / kCarouselFrames)
-                          : 0;
+    const uint32_t frame = millis() / 55;
+    orbit::sky(0, bodyTop, w, h - bodyTop - kFooterHeight, 0xC0DE);
 
-    auto drawAt = [&](int offset) {
-        const int idx = ((selected_ + offset) % total + total) % total;
-        const MenuItem& item = items_[idx];
-        if (item.icon == "separator") {
-            return;
-        }
-        const bool center = (offset == 0);
-        const int cw = center ? centerW : sideW;
-        const int ch = center ? centerH : sideH;
-        const int x = centerX + offset * kCarouselSpacing - cw / 2 + shift;
-        const int y = center ? centerY : sideY;
-        drawCarouselCard(item, x, y, cw, ch, center, idx);
-    };
+    const int cx = w / 2;
+    const int cy = bodyTop + 40;
+    const int rx = 84;
+    const int ry = 26;
 
-    drawAt(-1);
-    drawAt(1);
-    drawAt(0);
-
-    if (total <= 10) {
-        const int spacing = 9;
-        const int startX = (w - (total - 1) * spacing) / 2;
-        for (int i = 0; i < total; ++i) {
-            display::g().fillCircle(startX + i * spacing, display::height() - 17, 2,
-                                    i == selected_ ? display::kNeoPink : display::kMuted);
-        }
-    } else if (carouselAnim_ == 0) {
-        const std::string page = std::to_string(selected_ + 1) + "/" + std::to_string(total);
-        display::textCentered(display::height() - 24, page, display::kMuted, 0);
-    }
-
+    // Decrementa prima del calcolo: l'ultimo frame cade a riposo.
     if (carouselAnim_ > 0) {
         --carouselAnim_;
+    }
+    const float anim = static_cast<float>(carouselAnim_) / kCarouselFrames;
+    const float phase = static_cast<float>(carouselDir_) * anim * kOrbitStep;
+
+    struct Slot {
+        int idx;
+        float a;
+        int x, y, z, size;
+    };
+    Slot slots[9];
+    int nslots = 0;
+    const int visible = std::min(total, 7);
+    for (int off = -(visible / 2); off <= (visible / 2); ++off) {
+        int idx = (selected_ + off) % total;
+        if (idx < 0) idx += total;
+        const float a = off * kOrbitStep + phase;
+        if (fabsf(a) > 2.95f) {
+            continue;
+        }
+        Slot& s = slots[nslots++];
+        s.idx = idx;
+        s.a = a;
+        s.z = static_cast<int>(cosf(a) * 100.0f);
+        s.x = cx + static_cast<int>(sinf(a) * rx);
+        s.y = cy + static_cast<int>(cosf(a) * ry);
+        s.size = 16 + static_cast<int>(((cosf(a) + 1.0f) * 0.5f) * 8.0f);
+    }
+    // Ordinamento per profondita': prima il fondo, poi la scena in primo piano.
+    for (int i = 0; i < nslots; ++i) {
+        for (int j = i + 1; j < nslots; ++j) {
+            if (slots[j].z < slots[i].z) {
+                const Slot t = slots[i];
+                slots[i] = slots[j];
+                slots[j] = t;
+            }
+        }
+    }
+
+    // Orbita puntinata.
+    orbit::orbitPath(cx, cy, rx, ry, display::C(display::T_line2), display::C(display::T_line),
+                     static_cast<int>(frame / 3));
+
+    // Metà posteriore (dietro al pianeta).
+    for (int i = 0; i < nslots; ++i) {
+        if (slots[i].z < 0) {
+            drawOrbitBadge(items_[slots[i].idx], slots[i].x, slots[i].y, slots[i].size, false,
+                           -1.0f);
+        }
+    }
+
+    // Pianeta centrale.
+    orbit::planet(cx, cy, 22, -0.6f, -0.5f, true);
+
+    // Metà anteriore.
+    for (int i = 0; i < nslots; ++i) {
+        if (slots[i].z >= 0) {
+            const bool center = (slots[i].idx == selected_);
+            drawOrbitBadge(items_[slots[i].idx], slots[i].x, slots[i].y, slots[i].size, center,
+                           1.0f);
+        }
+    }
+
+    // Satellite "luna": resta fuori dagli anelli dei badge.
+    const float satA = frame * 0.09f;
+    orbit::satellite(cx + 27 + static_cast<int>(sinf(satA) * 3.0f),
+                     cy - 33 + static_cast<int>(cosf(satA) * 2.0f), 11,
+                     display::C(display::T_hi), display::C(display::T_sec));
+
+    // Etichetta della voce selezionata + indice.
+    if (selected_ >= 0 && selected_ < total) {
+        const MenuItem& item = items_[selected_];
+        const std::string label = ellipsize(toUpper(item.label), w - 110, 2);
+        const int labelY = h - kFooterHeight - 15;
+        display::textCentered(labelY, label,
+                              item.enabled ? display::C(display::T_hi) : display::C(display::T_dim),
+                              2);
+        display::text(6, labelY, "ORBIT", display::C(display::T_dim), 0);
+        char pos[12];
+        std::snprintf(pos, sizeof(pos), "%02d/%02d", selected_ + 1, total);
+        display::text(w - 6 - display::textWidth(pos, 0), labelY, pos,
+                      display::C(display::T_acc), 0);
     }
 }
 

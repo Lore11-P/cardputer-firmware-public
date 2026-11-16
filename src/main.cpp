@@ -116,6 +116,7 @@ void setup() {
     config::begin();
 
     display::begin();
+    display::setTheme(config::theme());
     display::applyRotation(config::rotation());
     M5Cardputer.Display.setBrightness(config::brightness());
 

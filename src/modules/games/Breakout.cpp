@@ -35,8 +35,18 @@ constexpr int kBrickGapY = 3;
 constexpr int kBrickX = kFieldX + 1;
 constexpr int kBrickY = kFieldY + 6;
 
-constexpr uint16_t kBrickColors[kRows] = {
-    display::kDanger, display::kWarning, display::kInfo, display::kAccent};
+inline uint16_t brickColor(int row) {
+    switch (((row % kRows) + kRows) % kRows) {
+        case 0:
+            return display::kDanger;
+        case 1:
+            return display::kWarning;
+        case 2:
+            return display::kInfo;
+        default:
+            return display::kAccent;
+    }
+}
 
 struct Brick {
     bool alive = true;
@@ -282,7 +292,7 @@ void runBreakout() {
                         continue;
                     }
                     display::g().fillRect(brickX(col), brickY(row), kBrickW,
-                                          kBrickH, kBrickColors[row]);
+                                          kBrickH, brickColor(row));
                     display::g().drawRect(brickX(col), brickY(row), kBrickW,
                                           kBrickH, display::kBlack);
                 }
